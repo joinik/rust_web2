@@ -1,7 +1,7 @@
 use std::{
     fs,
     io::{prelude::*, BufReader},
-    net::{TcpListener, TcpStream},
+    net::{TcpListener, TcpStream}
 };
 
 fn main() {
@@ -19,17 +19,29 @@ fn main() {
 fn handle_connection(mut stream: TcpStream) {
     // 读取客户端发送的数据
     let buffer = BufReader::new(&mut stream);
-    let http_request: Vec<_> = buffer
-        .lines()
-        .map(|result| result.unwrap())
-        .take_while(|line| !line.is_empty())
-        .collect();
+    let request_line: String = buffer.lines().next().unwrap().unwrap();
+
     // 处理数据
-    let status_line = "HTTP/1.1 200 OK";
-    let contents = fs::read_to_string("hello.html").unwrap();
-    let length = contents.len();
-    let response = format!("{status_line}\r\nContent-Length:{length}\r\n\r\n{contents}");
-    // 发送响应
-    stream.write_all(response.as_bytes()).unwrap();
-    stream.flush().unwrap();
+    if request_line == "GET / HTTP/1.1" {
+        // 处理 GET 请求
+        let status_line = "HTTP/1.1 200 OK";
+        let contents = fs::read_to_string("hello.html").unwrap();
+        let length = contents.len();
+        let response = format!("{status_line}\r\nContent-Length:{length}\r\n\r\n{contents}");
+        // 发送响应
+        stream.write_all(response.as_bytes()).unwrap();
+        stream.flush().unwrap();
+    } else {
+        // 处理其他请求
+        // some other request
+        let status_line = "HTTP/1.1 404 NOT FOUND";
+        let contents = fs::read_to_string("404.html").unwrap();
+        let length = contents.len();
+
+        let response = format!(
+            "{status_line}\r\nContent-Length: {length}\r\n\r\n{contents}"
+        );
+
+        stream.write_all(response.as_bytes()).unwrap();
+    }
 }
