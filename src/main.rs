@@ -1,7 +1,7 @@
 use std::{
     fs,
     io::{prelude::*, BufReader},
-    net::{TcpListener, TcpStream}
+    net::{TcpListener, TcpStream},
 };
 
 fn main() {
@@ -22,26 +22,19 @@ fn handle_connection(mut stream: TcpStream) {
     let request_line: String = buffer.lines().next().unwrap().unwrap();
 
     // 处理数据
-    if request_line == "GET / HTTP/1.1" {
+    let (status_line, filename) = if request_line == "GET / HTTP/1.1" {
         // 处理 GET 请求
-        let status_line = "HTTP/1.1 200 OK";
-        let contents = fs::read_to_string("hello.html").unwrap();
-        let length = contents.len();
-        let response = format!("{status_line}\r\nContent-Length:{length}\r\n\r\n{contents}");
-        // 发送响应
-        stream.write_all(response.as_bytes()).unwrap();
-        stream.flush().unwrap();
+        ("HTTP/1.1 200 OK", "hello.html")
     } else {
-        // 处理其他请求
-        // some other request
-        let status_line = "HTTP/1.1 404 NOT FOUND";
-        let contents = fs::read_to_string("404.html").unwrap();
-        let length = contents.len();
+        // 处理404 请求
+        ("HTTP/1.1 200 OK", "404.html")
+    };
+    let contents = fs::read_to_string(filename).unwrap();
+    let length = contents.len();
 
-        let response = format!(
-            "{status_line}\r\nContent-Length: {length}\r\n\r\n{contents}"
-        );
+    let response = format!("{status_line}\r\nContent-Length: {length}\r\n\r\n{contents}");
 
-        stream.write_all(response.as_bytes()).unwrap();
-    }
+    stream.write_all(response.as_bytes()).unwrap();
+    // 将所有已写入的数据刷新到目标设备或存储介质中，确保数据被完整地传输或保存
+    stream.flush().unwrap();
 }
